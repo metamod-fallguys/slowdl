@@ -1,0 +1,10 @@
+{
+    "schemaVersion": 1,
+    "name": "slowdl_windows",
+    "gameVersions": ["hl-3248", "hl-3266", "hl-3329", "hl-3647", "hl-4554", "hl-6153", "cof-5936"],
+    "platforms": ["windows"],
+    "symbols": {"engine": {
+        "SV_BeginFileDownload_f": "function", "SV_DropClient": "function",
+        "host_client": "global", "cmd_source": "global", "sv_player": "global"
+    }}
+}

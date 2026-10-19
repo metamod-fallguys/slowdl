@@ -1,0 +1,12 @@
+/.clang-format
+/build/
+/install/
+/output/
+/.vs/
+*.obj
+*.o
+*.pdb
+*.dll
+*.so
+*.lib
+*.exp

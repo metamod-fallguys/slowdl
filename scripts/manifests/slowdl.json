@@ -1,0 +1,24 @@
+{
+    "schemaVersion": 1,
+    "name": "slowdl",
+    "gameVersions": ["hl-8684", "hl-10210", "svencoop-8948", "svencoop-10257"],
+    "platforms": ["windows", "linux"],
+    "symbols": {
+        "engine": {
+            "host_client": "global",
+            "cmd_source": "global",
+            "sv_player": "global"
+        }
+    },
+    "platformSymbols": {
+        "windows": {"engine": {"SV_BeginFileDownload_f": "function", "SV_DropClient": "function"}},
+        "linux": {"engine": {
+            "SV_BeginFileDownload_f": "function", "_Z22SV_BeginFileDownload_fv": "function",
+            "SV_DropClient": "function", "_Z13SV_DropClientP8client_siPcz": "function"
+        }}
+    },
+    "alternativeGroups": [
+        ["SV_BeginFileDownload_f", "_Z22SV_BeginFileDownload_fv"],
+        ["SV_DropClient", "_Z13SV_DropClientP8client_siPcz"]
+    ]
+}
