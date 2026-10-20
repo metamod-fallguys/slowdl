@@ -7,7 +7,7 @@ if(METAMOD_SOURCE_PATH)
 else()
     include("${CMAKE_CURRENT_LIST_DIR}/Revisions.cmake")
     FetchContent_Declare(mmfg_metamod
-        GIT_REPOSITORY https://github.com/metamod-fallguys/metamod.git
+        GIT_REPOSITORY https://github.com/metamod-svencoop/metamod.git
         GIT_TAG "${MMFG_METAMOD_REVISION}"
         GIT_SUBMODULES "" GIT_SUBMODULES_RECURSE FALSE SOURCE_SUBDIR mmfg-source-only)
     FetchContent_MakeAvailable(mmfg_metamod)

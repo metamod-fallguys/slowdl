@@ -1,6 +1,6 @@
 # SlowDL
 
-A standalone [Metamod-FallGuys](https://github.com/hzqst/metamod-fallguys) plugin that monitors GoldSrc UDP (`dlfile`) download requests, including fallback after a failed FastDL request. AngelScript and ASExt are not required.
+A standalone [metamod-svencoop](https://github.com/metamod-svencoop/metamod-svencoop) plugin that monitors GoldSrc UDP (`dlfile`) download requests, including fallback after a failed FastDL request. AngelScript and ASExt are not required.
 
 ## Configuration
 

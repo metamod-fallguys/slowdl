@@ -29,7 +29,7 @@ plugin_info_t Plugin_info = {
     "1.0",                                        // version
     "2026",                                       // date
     "hzqst",                                      // author
-    "https://github.com/metamod-fallguys/slowdl", // url
+    "https://github.com/metamod-svencoop/slowdl", // url
     "SLOWDL",                                     // logtag, all caps please
     PT_ANYTIME,                                   // (when) loadable
     PT_NEVER,                                     // (when) unloadable
