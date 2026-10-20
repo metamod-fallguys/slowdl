@@ -16,116 +16,192 @@
         }                                                  \
     } while (0)
 
-struct Spy : SlowDL::Sink
+// Records every decision as one character: F(orward), D(rop), C(onsole), L(og file)
+class CSpySlowDLSink : public ISlowDLSink
 {
-    int         forwards = 0, drops = 0, consoles = 0, files = 0, errors = 0;
-    bool        writable = true;
-    std::string line, sequence;
-    void        Forward() override
+public:
+    void ForwardRequest() override
     {
-        ++forwards;
-        sequence += 'F';
+        ++m_iForwards;
+        m_Sequence += 'F';
     }
-    void Drop() override
+
+    void DropClient() override
     {
-        ++drops;
-        sequence += 'D';
+        ++m_iDrops;
+        m_Sequence += 'D';
     }
-    void Console(const std::string& text) override
+
+    void PrintConsole(const std::string& line) override
     {
-        ++consoles;
-        line = text;
-        sequence += 'C';
+        ++m_iConsoles;
+        m_LastLine = line;
+        m_Sequence += 'C';
     }
-    bool File(const std::string& text) override
+
+    bool AppendFileLog(const std::string& line) override
     {
-        ++files;
-        line = text;
-        sequence += 'L';
-        return writable;
+        ++m_iFiles;
+        m_LastLine = line;
+        m_Sequence += 'L';
+        return m_bWritable;
     }
-    void FileError() override { ++errors; }
+
+    void ReportFileLogError() override
+    {
+        ++m_iErrors;
+    }
+
+    int         m_iForwards = 0;
+    int         m_iDrops    = 0;
+    int         m_iConsoles = 0;
+    int         m_iFiles    = 0;
+    int         m_iErrors   = 0;
+    bool        m_bWritable = true;
+    std::string m_LastLine;
+    std::string m_Sequence;
 };
 
 int main()
 {
-    const std::string decal = "!MD5" + std::string(32, 'a');
-    CHECK(SlowDL::Classify(decal, true, "test") == SlowDL::Exception::CustomDecal);
-    CHECK(SlowDL::Classify("!md5" + std::string(32, 'a'), false, "test") == SlowDL::Exception::CustomDecal);
-    for (const std::string name : std::initializer_list<std::string>{"!anything", "!MD5", decal + "a", "!ModuleC.dll"})
-        CHECK(SlowDL::Classify(name, true, "test") == SlowDL::Exception::None);
-    CHECK(SlowDL::Classify("MAPS\\SOUNDCACHE\\TEST.TXT", true, "test") == SlowDL::Exception::SoundCache);
-    for (const std::string name : {"soundcache.txt", "maps/soundcache/other.txt", "maps/soundcache/../test.txt", "maps/soundcache/test.txt.bak"})
-        CHECK(SlowDL::Classify(name, true, "test") == SlowDL::Exception::None);
-    CHECK(SlowDL::Classify("maps/soundcache/test.txt", false, "test") == SlowDL::Exception::None);
-    CHECK(SlowDL::Classify("maps/soundcache/.txt", true, "") == SlowDL::Exception::None);
+    // Classification
 
-    SlowDL::Request request{true, true, "models/test.mdl", "test", true, "player\n\"", 42, "STEAM_0:1:7"};
+    const std::string decal = "!MD5" + std::string(32, 'a');
+
+    CHECK(SlowDL_ClassifyDownload(decal, true, "test") == SlowDLException_CustomDecal);
+    CHECK(SlowDL_ClassifyDownload("!md5" + std::string(32, 'a'), false, "test") == SlowDLException_CustomDecal);
+
+    for (const std::string name : std::initializer_list<std::string>{"!anything", "!MD5", decal + "a", "!ModuleC.dll"})
+    {
+        CHECK(SlowDL_ClassifyDownload(name, true, "test") == SlowDLException_None);
+    }
+
+    CHECK(SlowDL_ClassifyDownload("MAPS\\SOUNDCACHE\\TEST.TXT", true, "test") == SlowDLException_SoundCache);
+
+    for (const std::string name : {"soundcache.txt", "maps/soundcache/other.txt", "maps/soundcache/../test.txt", "maps/soundcache/test.txt.bak"})
+    {
+        CHECK(SlowDL_ClassifyDownload(name, true, "test") == SlowDLException_None);
+    }
+
+    CHECK(SlowDL_ClassifyDownload("maps/soundcache/test.txt", false, "test") == SlowDLException_None);
+    CHECK(SlowDL_ClassifyDownload("maps/soundcache/.txt", true, "") == SlowDLException_None);
+
+    // Every cvar combination for ordinary and exempt requests
+
+    slowdl_request_t request{true, true, "models/test.mdl", "test", true, "player\n\"", 42, "STEAM_0:1:7"};
+
     for (int switches = 0; switches < 8; ++switches)
+    {
         for (const std::string filename : {std::string("models/test.mdl"), decal, std::string("maps/soundcache/test.txt")})
         {
             request.filename = filename;
-            SlowDL::Settings settings{bool(switches & 1), bool(switches & 2), bool(switches & 4)};
-            SlowDL::Monitor  monitor;
-            Spy              spy;
-            monitor.Handle(request, settings, spy);
+
+            slowdl_settings_t settings{bool(switches & 1), bool(switches & 2), bool(switches & 4)};
+            CSlowDLMonitor    monitor;
+            CSpySlowDLSink    spy;
+
+            monitor.HandleRequest(request, settings, spy);
+
             const bool kick = settings.kick && filename == "models/test.mdl";
-            CHECK(spy.drops == int(kick));
-            CHECK(spy.forwards == int(!kick));
-            CHECK(spy.consoles == int(settings.consoleLog));
-            CHECK(spy.files == int(settings.fileLog));
-            CHECK(spy.sequence.back() == (kick ? 'D' : 'F'));
-            CHECK(spy.line.find('\n') == std::string::npos);
-            if (settings.consoleLog || settings.fileLog)
+
+            CHECK(spy.m_iDrops == int(kick));
+            CHECK(spy.m_iForwards == int(!kick));
+            CHECK(spy.m_iConsoles == int(settings.console_log));
+            CHECK(spy.m_iFiles == int(settings.file_log));
+            CHECK(spy.m_Sequence.back() == (kick ? 'D' : 'F'));
+            CHECK(spy.m_LastLine.find('\n') == std::string::npos);
+
+            if (settings.console_log || settings.file_log)
             {
-                CHECK(spy.line.find("42") != std::string::npos);
-                CHECK(spy.line.find("STEAM_0:1:7") != std::string::npos);
+                CHECK(spy.m_LastLine.find("42") != std::string::npos);
+                CHECK(spy.m_LastLine.find("STEAM_0:1:7") != std::string::npos);
             }
         }
+    }
+
+    // Invalid contexts are forwarded without logging
+
     for (int invalid = 0; invalid < 3; ++invalid)
     {
         auto invalidRequest = request;
-        if (invalid == 0) invalidRequest.clientSource = false;
-        if (invalid == 1) invalidRequest.hasClient = false;
-        if (invalid == 2) invalidRequest.filename.clear();
-        SlowDL::Monitor monitor;
-        Spy             spy;
-        monitor.Handle(invalidRequest, {true, true, true}, spy);
-        CHECK(spy.sequence == "F");
+
+        if (invalid == 0)
+            invalidRequest.client_source = false;
+
+        if (invalid == 1)
+            invalidRequest.has_client = false;
+
+        if (invalid == 2)
+            invalidRequest.filename.clear();
+
+        CSlowDLMonitor monitor;
+        CSpySlowDLSink spy;
+
+        monitor.HandleRequest(invalidRequest, {true, true, true}, spy);
+
+        CHECK(spy.m_Sequence == "F");
     }
-    SlowDL::Monitor monitor;
-    Spy             spy;
-    spy.writable     = false;
+
+    // File write failures are reported once until writing succeeds again
+
+    CSlowDLMonitor monitor;
+    CSpySlowDLSink spy;
+
+    spy.m_bWritable  = false;
     request.filename = "models/test.mdl";
-    monitor.Handle(request, {true, false, true}, spy);
-    monitor.Handle(request, {true, false, true}, spy);
-    CHECK(spy.errors == 1 && spy.drops == 2 && spy.forwards == 0);
-    spy.writable = true;
-    monitor.Handle(request, {false, false, true}, spy);
-    spy.writable = false;
-    monitor.Handle(request, {false, false, true}, spy);
-    CHECK(spy.errors == 2 && spy.forwards == 2);
-    CHECK(SlowDL::Escape("a\r\nb\t\"\\") == "a\\r\\nb\\t\\\"\\\\");
+
+    monitor.HandleRequest(request, {true, false, true}, spy);
+    monitor.HandleRequest(request, {true, false, true}, spy);
+
+    CHECK(spy.m_iErrors == 1 && spy.m_iDrops == 2 && spy.m_iForwards == 0);
+
+    spy.m_bWritable = true;
+    monitor.HandleRequest(request, {false, false, true}, spy);
+
+    spy.m_bWritable = false;
+    monitor.HandleRequest(request, {false, false, true}, spy);
+
+    CHECK(spy.m_iErrors == 2 && spy.m_iForwards == 2);
+
+    // Log escaping
+
+    CHECK(SlowDL_EscapeLogField("a\r\nb\t\"\\") == "a\\r\\nb\\t\\\"\\\\");
+
+    // File log
 
     const auto root = std::filesystem::temp_directory_path() /
         ("slowdl-test-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+
     CHECK(std::filesystem::create_directory(root));
-    SlowDL::FileLog log(root.string());
+
+    CSlowDLFileLog log(root.string());
+
     CHECK(log.Append("request", 0));
+
     int count = 0;
+
     for (const auto& file : std::filesystem::directory_iterator(root / "logs"))
     {
         std::ifstream input(file.path());
         std::string   line;
+
         CHECK(bool(std::getline(input, line)));
         CHECK(line.find("request") != std::string::npos);
+
         ++count;
     }
+
     CHECK(count == 1);
+
+    // A regular file in place of the game directory cannot hold logs/
     std::ofstream(root / "blocked") << "file";
-    SlowDL::FileLog blocked((root / "blocked").string());
+
+    CSlowDLFileLog blocked((root / "blocked").string());
+
     CHECK(!blocked.Append("request", 0));
+
     std::filesystem::remove_all(root);
+
     std::cout << "SlowDL behavior tests passed\n";
     return 0;
 }
