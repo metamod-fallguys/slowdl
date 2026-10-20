@@ -1,19 +1,20 @@
-#ifndef SLOWDL_FILE_LOG_H
-#define SLOWDL_FILE_LOG_H
+#pragma once
 
 #include <ctime>
 #include <string>
 
-namespace SlowDL
-{
-class FileLog
+// Appends records to <gamedir>/logs/slowdl_YYYYMMDD.log
+class CSlowDLFileLog
 {
 public:
-    explicit FileLog(const std::string& gameDirectory) : directory(gameDirectory) {}
+    explicit CSlowDLFileLog(const std::string& gameDirectory) :
+        m_GameDirectory(gameDirectory)
+    {
+    }
+
+    // Returns false when the log directory or file cannot be written.
     bool Append(const std::string& line, std::time_t timestamp);
 
 private:
-    std::string directory;
+    std::string m_GameDirectory;
 };
-} // namespace SlowDL
-#endif

@@ -12,7 +12,15 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 include("${METAMOD_SOURCE_PATH}/cmake/SDK.cmake")
 mmfg_configure_install_layout()
-add_library(slowdl SHARED src/plugin.cpp src/monitor.cpp src/file_log.cpp)
+add_library(slowdl SHARED
+    src/dllapi.cpp
+    src/engine_hook.cpp
+    src/file_log.cpp
+    src/h_export.cpp
+    src/meta_api.cpp
+    src/monitor.cpp
+    src/slowdl.cpp
+)
 mmfg_configure_target(slowdl)
 target_link_libraries(slowdl PRIVATE Metamod::SDK)
 if(WIN32)

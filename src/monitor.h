@@ -1,53 +1,70 @@
-#ifndef SLOWDL_MONITOR_H
-#define SLOWDL_MONITOR_H
+#pragma once
 
 #include <string>
 
-namespace SlowDL
+// Requests that are exempt from kicking. They are still logged.
+enum SlowDLException
 {
-enum class Exception
-{
-    None,
-    CustomDecal,
-    SoundCache
+    SlowDLException_None,
+    SlowDLException_CustomDecal,
+    SlowDLException_SoundCache,
 };
-Exception   Classify(const std::string& filename, bool svenCoop, const std::string& map);
-std::string Escape(const std::string& text);
 
-struct Settings
+SlowDLException SlowDL_ClassifyDownload(const std::string& filename, bool svencoop, const std::string& mapname);
+std::string     SlowDL_EscapeLogField(const std::string& text);
+
+// Snapshot of the sv_slowdl_* cvars for a single request.
+typedef struct slowdl_settings_s
 {
     bool kick;
-    bool consoleLog;
-    bool fileLog;
-};
-struct Request
+    bool console_log;
+    bool file_log;
+} slowdl_settings_t;
+
+// A dlfile request copied from the engine.
+typedef struct slowdl_request_s
 {
-    bool        clientSource = false;
-    bool        hasClient    = false;
+    bool        client_source = false;
+    bool        has_client    = false;
     std::string filename;
-    std::string map;
-    bool        svenCoop = false;
+    std::string mapname;
+    bool        svencoop = false;
     std::string player   = "unknown";
-    int         userId   = -1;
-    std::string authId   = "unknown";
-};
-class Sink
+    int         userid   = -1;
+    std::string authid   = "unknown";
+} slowdl_request_t;
+
+// Receives the decision of CSlowDLMonitor.
+class ISlowDLSink
 {
 public:
-    virtual ~Sink()                               = default;
-    virtual void Forward()                        = 0;
-    virtual void Drop()                           = 0;
-    virtual void Console(const std::string& line) = 0;
-    virtual bool File(const std::string& line)    = 0;
-    virtual void FileError()                      = 0;
+    virtual ~ISlowDLSink() = default;
+
+    // Pass the request to the engine download handler.
+    virtual void ForwardRequest() = 0;
+
+    // Disconnect the requesting client.
+    virtual void DropClient() = 0;
+
+    virtual void PrintConsole(const std::string& line) = 0;
+
+    // Returns false when the line could not be written.
+    virtual bool AppendFileLog(const std::string& line) = 0;
+
+    virtual void ReportFileLogError() = 0;
 };
-class Monitor
+
+class CSlowDLMonitor
 {
 public:
-    void Handle(const Request& request, const Settings& settings, Sink& sink);
+    CSlowDLMonitor()
+    {
+        m_bFileLogFailed = false;
+    }
+
+    void HandleRequest(const slowdl_request_t& request, const slowdl_settings_t& settings, ISlowDLSink& sink);
 
 private:
-    bool fileFailed = false;
+    // Only the first of consecutive file log failures is reported.
+    bool m_bFileLogFailed;
 };
-} // namespace SlowDL
-#endif
