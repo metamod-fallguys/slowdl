@@ -61,8 +61,10 @@ static void CopyPlayerIdentity(edict_t* pPlayer, slowdl_request_t& request)
     // netname is not set before the player spawns.
     if (request.player.empty())
     {
+        static char nameKey[] = "name";
+
         char*       infoBuffer = g_engfuncs.pfnGetInfoKeyBuffer(pPlayer);
-        const char* name       = infoBuffer ? g_engfuncs.pfnInfoKeyValue(infoBuffer, "name") : NULL;
+        const char* name       = infoBuffer ? g_engfuncs.pfnInfoKeyValue(infoBuffer, nameKey) : NULL;
 
         request.player = (name && *name) ? name : "unknown";
     }

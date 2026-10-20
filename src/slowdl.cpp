@@ -7,9 +7,17 @@
 
 #include "slowdl.h"
 
-cvar_t g_sv_slowdl_kick        = {"sv_slowdl_kick", "0", FCVAR_SERVER};
-cvar_t g_sv_slowdl_console_log = {"sv_slowdl_console_log", "1", FCVAR_SERVER};
-cvar_t g_sv_slowdl_file_log    = {"sv_slowdl_file_log", "1", FCVAR_SERVER};
+// cvar_t holds non-const strings, so keep the initial values in writable storage.
+static char g_szKickCvarName[]        = "sv_slowdl_kick";
+static char g_szKickCvarValue[]       = "0";
+static char g_szConsoleLogCvarName[]  = "sv_slowdl_console_log";
+static char g_szConsoleLogCvarValue[] = "1";
+static char g_szFileLogCvarName[]     = "sv_slowdl_file_log";
+static char g_szFileLogCvarValue[]    = "1";
+
+cvar_t g_sv_slowdl_kick        = {g_szKickCvarName, g_szKickCvarValue, FCVAR_SERVER};
+cvar_t g_sv_slowdl_console_log = {g_szConsoleLogCvarName, g_szConsoleLogCvarValue, FCVAR_SERVER};
+cvar_t g_sv_slowdl_file_log    = {g_szFileLogCvarName, g_szFileLogCvarValue, FCVAR_SERVER};
 
 bool                            g_bIsSvenCoop = false;
 CSlowDLMonitor                  g_SlowDLMonitor;
